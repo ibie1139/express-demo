@@ -1,98 +1,32 @@
 const express = require('express');
-const Joi = require('joi'); // return: a class
+const Joi = require('joi');
+
+const courses = require('./routes/courses');
+const home = require('./routes/home');
+const logger = require('./middleware/logger');
 
 const app = express();
 
-app.use(express.json()); // express.json() - create a middleware, and use in the preprocessing pipeline via `app.use()`
+app.set('view engine', 'pug');
+app.set('views', './views'); // in () now are the default values, optional syntax
 
-// Data
-const courses = [
-  { id: 1, name: 'Physics' },
-  { id: 2, name: 'Mathematics' },
-  { id: 3, name: 'Chemistry' },
-  { id: 4, name: 'Biology' },
-];
+app.use(express.json()); // built-in middleware 1
+app.use(express.urlencoded({ extended: true })); // built-in middleware 2
+app.use(express.static('public')); // built-in middleware 3 - present static files in 'public' folder
 
-// Note: this function will be used in PUT and DELETE
-// The original one, with annotations, is kept in POST for review.
-function inputValidate(input) {
-  const schema = Joi.object({
-    name: Joi.string().min(2).required()
-  });
-  const { error } = schema.validate(input); // use object destructuring here
-  if (error) {
-    return res.status(400).send(result.error.details[0].message);
-  };
+app.use(logger); // custom middleware
+
+// Process variously based on the environment
+console.log(`NODE_ENV: ${process.env.NODE_ENV}`); // 1st way to check environment using 'process' object
+if (app.get('env') === 'development') { // 2nd way to check environment setting with `app.get()`
+  console.log('Development environment in settings.');
+} else if (app.get('env') === 'production') {
+  console.log('Production environment. Be careful.');
 }
 
 // APIs for courses
-
-// POST - Create
-app.post('/api/courses', (req, res) => {
-  // if the value is invalid
-  const schema = Joi.object({ // schema: shape of the object
-    name: Joi.string().min(2).required()
-  });
-  const result = schema.validate(req.body);
-  if (result.error) {
-    return res.status(400).send(result.error.details[0].message);
-  };
-  // const schema = Joi.string().min(2).required(); -- syntax wrong
-
-  // if the value is valid
-  const course = {
-    id: courses.length + 1,
-    name: req.body.name
-  }
-  courses.push(course);
-  res.send(course);
-});
-
-// GET - Read
-app.get('/api/courses', (req, res) => {
-  res.send(courses);
-});
-
-app.get('/api/courses/:id', (req, res) => {
-  // if id is not found
-  const course = courses.find(c => c.id === parseInt(req.params.id)); // not `courses.filter`, filter returns an array. Even an empty array, `!course` is false.
-  if (!course) {
-    res.status(404).send('The given ID is not found in the courses catalog.');
-    return;
-  }
-
-  // if id is found, return the course
-  res.send(course);
-});
-
-// PUT - Update
-app.put('/api/courses/:id', (req, res) => {
-  const course = courses.find(c => c.id === parseInt(req.params.id));
-  // if id is not found
-  if (!course) return res.status(404).send('The given ID is not found in the courses catalog.');
-
-  // if input is not valid -- repeat logic -> refactor the code into a function
-  inputValidate(req.body);
-
-  // otherwise, update the corresponding course
-  course.name = req.body.name;
-  res.send(course);
-});
-
-// DELETE - Delete
-app.delete('/api/courses/:id', (req, res) => {
-  const course = courses.find(c => c.id === parseInt(req.params.id));
-  // if id is not found
-  if (!course) return res.status(404).send('The given ID is not found in the courses catalog.');
-
-  // if input is not valid -- repeat logic, put into a function
-  inputValidate(req.body);
-
-  // id is valid, delete the course
-  const indexDeleted = courses.indexOf(course);
-  courses.splice(indexDeleted, 1);
-  res.send(course);
-});
+app.use('/', home);
+app.use('/api/courses', courses);
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Connection on port ${port}`)); // port
+app.listen(port, () => console.log(`Connection on port ${port}`));
