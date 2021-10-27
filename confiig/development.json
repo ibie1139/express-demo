@@ -1,0 +1,9 @@
+{
+  "Customer": {
+    "name": "Express Demo App - Development",
+    "host": "localhost",
+    "mail": {
+      "host": "dev-mail-server"
+    }
+  }
+}

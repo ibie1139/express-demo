@@ -1,0 +1,6 @@
+{
+  "Customer": {
+    "name": "Express Demo App",
+    "host": "localhost"
+  } 
+}
